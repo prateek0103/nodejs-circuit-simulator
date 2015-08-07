@@ -1,0 +1,235 @@
+.positioned { position: absolute; }
+.component { position: absolute; }
+.invisible { visibility: hidden; }
+.clearer { clear: both; }
+.hidden { display: none; }
+
+.component-highlight {
+	position: absolute;
+	top: -4px;
+	left: -4px;
+	bottom: -4px;
+	right: -4px;
+	background: rgba(255,128,128,0.5);
+	z-index: -1;
+	border-radius: 8px;
+	visibility: hidden;
+}
+
+.breadboard {
+	border: 2px solid #aaa;
+	border-radius: 10px;
+	position: relative;
+	left: 10px;
+	top: 10px;
+	background: url("/breadboard.svg");
+}
+
+.board-layer {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	bottom: 0px;
+	right: 0px;
+}
+
+.component-shop {
+	background: #a0ffa0;
+	margin-bottom: 16px;
+}
+
+.component-icon-box {
+	position: relative;
+	min-width: 64px;
+	min-height: 64px;
+	padding: 8px;
+	background: #65A45C;
+	border-radius: 8px;
+	margin: 8px;
+	float: left;
+	overflow: hidden;
+}
+
+.component-icon {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	margin: auto;
+}
+
+.grabber {
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+	opacity: 0;
+	z-index: 100000;
+}
+
+.help-box, .property-box {
+	position: fixed;
+	bottom: 8px;
+	margin: 10px;
+	box-shadow: 4px 4px 10px rgb(68, 68, 68);
+}
+
+.help-box {
+	background: white;
+	left: 50%;
+	padding: 5px 20px;
+	border-radius: 20px;
+	border: 2px solid #ccc;
+}
+
+.property-box-header {
+    height: 2em;
+    font-size: 150%;
+    font-weight: bold;
+    font-style: italic;
+    color: #4E4E4E;
+    padding: 0 1em;
+}
+
+.property-box-header .component-name {
+	float: left;
+	width: 6em;
+	overflow: hidden;
+}
+
+.property-box-header .component-type {
+	float: right;
+	width: 7em;
+	overflow: hidden;
+	text-align: right;
+}
+
+.property-box {
+	right: 50%;
+	width: 25em;
+	border: 1px solid #444;
+	background: #C0C9D4;
+	border-radius: 10px;
+	padding: 10px;
+}
+
+table.property-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+table.property-table td {
+	padding: 4px 20px;
+}
+
+table.property-table td.property-value {
+	text-align: right;
+}
+
+.desktop {
+		position: relative;
+		border: 0px solid black;
+}
+
+.meter, .voltage-source {
+	position: absolute;
+	padding: 20px;
+	text-align: center;
+	font-weight: bold;
+	font-family: monospace;
+	font-size: 20px;
+}
+
+.value-display {
+	background: #ccc;
+	border: 3px solid #888;
+	border-radius: 8px;
+	height: 1em;
+	margin: 10px auto;
+	padding: 6px 12px;
+	text-align: right;
+	width: 5em;
+}			
+
+.meter {
+	background: #FFB633;
+	border: 3px solid #4A4A4A;
+	border-radius: 12px;
+	width: 200px;
+	height: 130px;
+}
+
+.meter .setting-button {
+	text-align: right;
+	margin: 20px;
+}
+
+.meter .setting-button button {
+	background: #ccc;
+	border: 2px solid #888;
+	border-radius: 16px;
+	padding: 6px;
+}
+
+.voltage-source {
+	background: #CCCAB8;
+	border: 3px solid #4A4A4A;
+	border-radius: 12px;
+	width: 200px;
+	height: 150px;
+}
+
+.voltage-source .slider {
+	margin: 20px;
+	font-size: 15px;
+}
+
+.dump-box {
+	position: absolute;
+	top: 20px;
+	right: 20px;
+	width: 480px;
+	height: 360px;
+	padding: 40px 10px 10px 10px;
+	border: 1px solid #888;
+	background: #ccc;
+	display: none;
+}
+
+.dump-box .closebtn {
+	position: absolute;
+	right: 20px;
+	top: 10px;
+	pardding: 5px;
+	font-size: 20px;
+}
+
+.dump-box .content {
+	position: absolute;
+	top: 40px;
+	left: 10px;
+	right: 10px;
+	bottom: 10px;
+	overflow: auto;
+	background: white;
+	border: 1px solid black;
+	padding: 4px;
+	font-family: monospace;
+}
+
+.hole-layer, .control-layer {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	bottom: 0px;
+	padding: 20px;
+}
+
+#buttons {
+	position: absolute;
+	bottom: 10px;
+	left: 10px;
+}

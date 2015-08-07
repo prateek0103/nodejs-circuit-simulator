@@ -1,0 +1,174 @@
+<html>
+	<head>
+		<link rel=stylesheet href="/css/jquery-ui-1.11.css">
+		<link rel=stylesheet href="/css/style.css">
+		<script src="/js/jquery-1.11.js"></script>
+		<script src="/js/jquery-ui-1.11.js"></script>
+		<script src="util.js"></script>
+		<script src="quicklog.js"></script>
+		<script src="breadsim2.js"></script>
+		<style>
+		</style>
+		<script>
+			var component_icons;
+			var component_shop;
+			
+			function remember_cursor_position(ev) {
+				window.last_mousemove = ev;
+				return true;
+			}
+			
+			$(function() {
+				$(document.body).on("mousemove",remember_cursor_position);
+			});
+			
+			function dump(content) {
+				$(".dump-box .content").html("<pre>"+content+"</pre>");
+				$(".dump-box").show();
+			}
+
+			function init() {
+				desktop = new Desktop($(".desktop"));
+				board = new Breadboard(desktop);
+				supply = new VoltageSource(desktop,{
+					offset: [800,20],
+					voltage: 5
+				});
+				meter = new Meter(desktop,{
+					offset: [800,300]
+				});
+				component_shop = $(".component-shop");
+
+				component_icons = [
+					[
+						Resistor.icon(desktop,component_shop),
+						function() { return new Resistor(desktop); }
+					],[
+						Diode.icon(desktop,component_shop),
+						function() { return new Diode(desktop); }
+					],[
+						Led.icon(desktop,component_shop),
+						function() { return new Led(desktop); }
+					]
+				];
+				
+				component_shop.prepend(
+					component_icons.map(function(icon) {
+						var el = icon[0];
+						var fn = icon[1];
+						el.addClass("component-icon");
+
+						var box = $("<div class=component-icon-box>");
+						box.append(el);
+						box.on("mousedown",function(ev) {
+							var component = fn();
+							desktop.selectComponent(component);
+							component.float(2,ev);
+							return false;
+						});
+
+						return box;
+					})
+				);
+				
+				$(".dump-box .closebtn").on("click",function() {
+					$(".dump-box").hide();
+					return false;
+				});
+				
+				$("#dumpbtn").on("click",function() {
+					dump(JSON.stringify(desktop.serialize()));
+					return false;
+				});
+				
+				var simulator;
+
+				$("#simulate_run").on("click",function() {
+					simulator = desktop.simulate();
+					simulator.then(function() {
+						// Nothing for now
+					},function(type) {
+						if(type == "req") {
+							alert("Could not contact server to run simulation");
+						} else if (type == "spice") {
+							alert("Spice simulation failed.");
+						} else {
+							// This shouldn't happen.
+							alert("internal error");
+						}
+						simulator = null;
+					});
+					return false;
+				});
+				
+				$("#simulate_stop").on("click",function() {
+					desktop.reset();
+					if(!simulator) return false;
+					
+					simulator.cancel();
+					simulator = null;
+					return false;
+				});
+				
+				desktop.on("change",function() {
+					if(!simulator) return false;
+					simulator = null;
+					desktop.reset();
+				});
+			}
+			
+			$(breadsim_init);
+			$(init);
+		</script>
+	</head>
+	<body>
+		<div class="component-shop">
+			<div class=clearer></div>
+		</div>
+		<div class="desktop">
+		</div>
+		<div class="property-box invisible">
+			<div class=property-box-header>
+				<div class=component-name></div>
+				<div class=component-type></div>
+				<div class=clearer></div>
+			</div>
+			<div class="property-table">
+			</div>
+		</div>
+		<div class="help-box invisible">
+			<p>"M" = move component</p>
+			<p>"R" = rotate component</p>
+		</div>
+		<div class="dump-box">
+			<button class=closebtn>X</button>
+			<div class=content>
+			</div>
+		</div>
+		<div id=buttons>
+			<button id=dumpbtn class=hidden> JSON </button>
+			<button id=simulate_run> Simulate! </button>
+			<button id=simulate_stop> Stop </button>
+		</div>
+		<div class="hidden" id="templates">
+			<div class=meter>
+				<div class=hole-layer></div>
+				<div class=control-layer>
+					Multimeter
+					<div class=value-display></div>
+					<div class="setting-button">
+						<button>V</button>
+					</div>
+				</div>
+			</div>
+			<div class=voltage-source>
+				<div class=hole-layer></div>
+				<div class=control-layer>
+					Power supply
+					<div class=value-display></div>
+					<div class=slider></div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
