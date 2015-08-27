@@ -10,7 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "~1.13.2",
+    "connect-redis": "^2.4.1",
     "express": "^4.13.1",
-    "body-parser": "~1.13.2"
+    "express-ims-lti": "^0.2.4",
+    "express-session": "^1.11.3"
   }
 }

@@ -36,26 +36,22 @@ var breadboard_layout = {
 }
 
 function tidyFloat(v) {
-	var units = [
-		["G",1e9],
-		["M",1e6],
-		["K",1e3],
-		["",1],
-		["m",1e-3],
-		["u",1e-6],
-		["n",1e-9],
-		["p",1e-12],
-	]
+	var units = {
+		"-12": "p",   "-9": "n",  "-6": "u", "-3": "m", "0": "",
+		  "3": "k",    "6": "M",   "9": "G"
+	};
+	var sign = (v<0) ? "-" : " ";
+	v = Math.abs(v);
 
-	for(var i=0;i<units.length;i++) {
-		var unit = units[i];
-		var ch = unit[0];
-		var mult = unit[1];
-		var v2 = (v/mult).toFixed(5);
-		if(Math.abs(v2) < 1) continue;
-		return ((""+v2).substr(0,4).replace(/\.$/,""))+" "+ch;
-	}
-	return "0";
+	var digits = Math.floor((Math.log(v)/Math.log(10)).toFixed(5));
+
+	if (digits < -12) return sign+"0"; // too small
+	if (digits >  11) return sign+"E"; // too large
+
+	var scale = Math.floor(digits/3)*3;
+	var r = 2+scale-digits;
+
+	return sign+((v/Math.pow(10,scale)).toFixed(r)) + " " + units[scale];
 }
 
 function Desktop(container) {
@@ -67,6 +63,7 @@ function Desktop(container) {
 	this.next_instrument_id = 1;
 	this.next_bus_id = 1;
 	this.holeHighlights = [];
+	this.component_layer = $(".component_layer",container);
 
 	var that = this;
 	container.on("mousedown",function(ev) {
@@ -912,30 +909,33 @@ Component.prototype.result = function(data) {} // default to ignore
 
 Component.prototype.rotated_data = function(orientation) {
 	var data;
+	var rotate;
 	if(orientation === undefined) orientation = this.orientation;
 	if(this.spec.orientations) {
 		var img = this.spec.orientations[orientation];
+		rotate = img.rotate;
 		data = {
 			url: img.url,
-			css: img.css,
 			origin: img.origin,
 			size: img.size
 		};
 	} else {
+		rotate = orientation;
 		var img = this.spec.image;
 		var m = Matrix.rotate(orientation * Math.PI/2);
 		var size = m.apply(img.size);
 		var origin = m.apply(img.origin);
 		data = {
 			url: img.url,
-			css: {
-				"transform": "rotate("+(orientation*90)+"deg)",
-				"transform-origin": "0 0"
-			},
 			size: size,
 			origin: origin
 		};
 	}
+	data.rotate = rotate;
+	data.css = {
+		"transform": "rotate("+(rotate*90)+"deg)",
+		"transform-origin": "0 0"
+	};
 	return data;
 }
 
@@ -952,11 +952,13 @@ Component.prototype.float = function(float_state,ev) {
 	this.float_state = float_state;
 	this.el.detach().appendTo($(document.body));
 
+	var imgdata = this.rotated_data(this.orientation);
+	var hotspot;
+
 	if(this.el.get(0) === ev.delegateTarget) {
-		var hotspot = Matrix.rotate(this.orientation*Math.PI/2)
+		hotspot = Matrix.rotate(imgdata.rotate*Math.PI/2)
 			.apply(point(ev.offsetX,ev.offsetY));
 	} else {
-		var imgdata = this.rotated_data(this.orientation);
 		hotspot = point(imgdata.size[0]/2,imgdata.size[1]/2);
 	}
 	
@@ -1010,6 +1012,7 @@ Component.prototype.unfloat = function() {
 		newholes[i].linkTo(this,i);
 	}
 	//~ this.el.detach().appendTo(this.board.component_layer);
+	//~ this.el.detach().appendTo(this.desktop.component_layer);
 	this.el.detach().appendTo(this.desktop.container);
 	this.redraw();
 }
@@ -1069,6 +1072,8 @@ Component.prototype.redraw = function() {
 		pos[1] -= data.origin[1];
 		this.el.css("opacity","");
 	}
+
+	this.el.attr({"style":""});
 	this.el.css({ top: pos[1], left: pos[0] });
 	this.el.css(imgdata.css);
 
@@ -1209,6 +1214,88 @@ Resistor.spec = {
 	]
 };
 
+function Inductor(desktop,state) {
+	Component.call(this,desktop,Inductor.spec,state);
+}
+
+Inductor.base(Component);
+
+Inductor.icon = function() {
+	var img = $("<img>");
+	img.attr("src", Inductor.spec.image.url);
+	return img;
+}
+
+Inductor.spec = {
+	type: "inductor",
+	name_prefix: "L",
+	pins: [ point(0,0),point(3,0) ],
+	image: {
+		url: "coil.png",
+		origin: point(3,18),
+		size: point(58,41)
+	},
+	properties: [
+		{
+			name: "value",
+			type: "text",
+			getter: function(el) { $("input",el).val(this.properties.value); },
+			setter: function(val,el) { this.properties.value = parseFloat(val); },
+			default: 1e-3
+		}
+	]
+};
+
+function Capacitor(desktop,state) {
+	Component.call(this,desktop,Capacitor.spec,state);
+}
+
+Capacitor.base(Component);
+
+Capacitor.icon = function() {
+	var img = $("<img>");
+	img.attr("src", Capacitor.spec.orientations[0].url);
+	return img;
+}
+
+Capacitor.spec = {
+	type: "capacitor",
+	name_prefix: "C",
+	pins: [ point(0,0),point(2,0) ],
+	orientations: [
+		{
+			url: "cap-ceramic.png",
+			origin: point(3,9),
+			size: point(42,18),
+			rotate: 0
+		}, {
+			url: "cap-ceramic.png",
+			origin: point(9,-39),
+			size: point(18,-42),
+			rotate: -1
+		}, {
+			url: "cap-ceramic.png",
+			origin: point(39,9),
+			size: point(42,18),
+			rotate: 0
+		}, {
+			url: "cap-ceramic.png",
+			origin: point(9,-3),
+			size: point(18,-42),
+			rotate: -1
+		}
+	],
+	properties: [
+		{
+			name: "value",
+			type: "text",
+			getter: function(el) { $("input",el).val(this.properties.value); },
+			setter: function(val,el) { this.properties.value = parseFloat(val); },
+			default: 1e-11
+		}
+	]
+};
+
 function Diode(desktop,state) {
 	Component.call(this,desktop,Diode.spec,state);
 }
@@ -1274,3 +1361,31 @@ Led.prototype.reset = function() {
 	delete this.lit;
 	this.redraw();
 };
+
+function Opamp(desktop,state) {
+	Component.call(this,desktop,Opamp.spec,state);
+}
+
+Opamp.base(Component);
+
+Opamp.icon = function() {
+	var img = $("<img>");
+	img.attr("src", Opamp.spec.image.url);
+	return img;
+}
+
+Opamp.spec = {
+	type: "lm741",
+	typename: "LM741",
+	name_prefix: "U",
+	pins: [
+		point(0,0),point(1,0),point(2,0),point(3,0),
+		point(3,-3),point(2,-3),point(1,-3),point(0,-3),
+	],
+	image: {
+		url: "ic-dip8.png",
+		origin: point(8,55),
+		size: point(70,56)
+	}
+};
+

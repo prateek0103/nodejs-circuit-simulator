@@ -44,11 +44,20 @@
 						Resistor.icon(desktop,component_shop),
 						function() { return new Resistor(desktop); }
 					],[
+						Capacitor.icon(desktop,component_shop),
+						function() { return new Capacitor(desktop); }
+					],[
+						Inductor.icon(desktop,component_shop),
+						function() { return new Inductor(desktop); }
+					],[
 						Diode.icon(desktop,component_shop),
 						function() { return new Diode(desktop); }
 					],[
 						Led.icon(desktop,component_shop),
 						function() { return new Led(desktop); }
+					],[
+						Opamp.icon(desktop,component_shop),
+						function() { return new Opamp(desktop); }
 					]
 				];
 				
@@ -126,6 +135,7 @@
 			<div class=clearer></div>
 		</div>
 		<div class="desktop">
+			<div class="component-layer"></div>
 		</div>
 		<div class="property-box invisible">
 			<div class=property-box-header>

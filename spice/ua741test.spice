@@ -1,0 +1,14 @@
+circuit
+.include ua741.model
+X1 13 12 2 50 19 uA741
+D2 24 19 LED
+R3 2 24 100
+R4 12 50 100
+R5 2 12 300
+R6 2 13 100
+R7 13 50 200
+V8 2 50 5
+Rlast 0 50 1e-9
+.model LED D(Is=1e-22 Rs=6 N=1.5 Cjo=50p)
+.op
+.end

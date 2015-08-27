@@ -1,14 +1,28 @@
 require('./util.js');
+require('./config.js');
 
 var express = require("express");
 var bodyParser = require('body-parser');
 var child_process = require("child_process");
+var ltiMiddleware = require("express-ims-lti");
+var session = require('express-session');
+var RedisStore = require('connect-redis')(session);
 var fs = require('fs');
 
 var app = express();
 
+var lm741_model = fs.readFileSync("spice/ua741.model");
+
 app.use(express.static('html'));
+app.use(session({
+	store: new RedisStore({}),
+	resave: false,
+	saveUninitialized: false,
+	secret: "none",
+}));
+
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended:true}));
 
 function Simulator(spec) {
 	this.spec = spec;
@@ -21,7 +35,7 @@ function Simulator(spec) {
 
 Simulator.prototype.newNodeId = function() {
 	return "int"+(this.node_id++);
-}
+};
 
 // Convert a list of links into a mapping of buses.
 // The returned list is used to map bus ids to a "collapsed" id that is
@@ -65,14 +79,14 @@ function parseSpiceRawFile(data) {
 	var keys = [];
 	var values = [];
 	
-	if(!map["values"] || !map["variables"]) return null;
-	map["variables"].forEach(function(line) {
+	if(!map.values || !map.variables) return null;
+	map.variables.forEach(function(line) {
 		var m = line.match(/^\s+(\d+)\s+v\(([^)]+)\)/);
 		if(!m) return;
 		keys[m[1]] = m[2];
 	});
 	var id = 0;
-	map["values"].forEach(function(line) {
+	map.values.forEach(function(line) {
 		var m = line.match(/^(\d+)?\s+(\S+)/);
 		if(!m) return;
 		if(m[1] !== undefined)
@@ -89,18 +103,35 @@ function parseSpiceRawFile(data) {
 
 Simulator.prototype.addModel = function(name,data) {
 	if(!this.models[name]) this.models[name] = data;
-}
+};
 
 Simulator.prototype.dataHook = function(fn) {
 	this.data_hooks.push(fn);
-}
+};
 
 Simulator.component_functions = {
+	// XXX DRY these 3-4 up
 	resistor: function(data,idx) {	
 		var id = this.newComponentId();
 		var nodes = this.buses_to_nodes(data.buses);
 
 		nodes.splice(0,0,"R"+id);
+		nodes.push(parseFloat(data.value));
+		return nodes.join(" ")+"\n";
+	},
+	capacitor: function(data,idx) {	
+		var id = this.newComponentId();
+		var nodes = this.buses_to_nodes(data.buses);
+
+		nodes.splice(0,0,"C"+id);
+		nodes.push(parseFloat(data.value));
+		return nodes.join(" ")+"\n";
+	},
+	inductor: function(data,idx) {	
+		var id = this.newComponentId();
+		var nodes = this.buses_to_nodes(data.buses);
+
+		nodes.splice(0,0,"L"+id);
 		nodes.push(parseFloat(data.value));
 		return nodes.join(" ")+"\n";
 	},
@@ -113,6 +144,18 @@ Simulator.component_functions = {
 		nodes.splice(0,0,"D"+id);
 		nodes.push('1N914');
 		return nodes.join(" ")+"\n";
+	},
+	lm741: function(data,idx) {
+		var id = this.newComponentId();
+		var nodes = this.buses_to_nodes(data.buses);
+
+		var d = [
+			"X"+id,
+			nodes[2],nodes[1],nodes[6],nodes[3],nodes[5],
+			"uA741"
+		];
+
+		return d.join(" ")+"\n";
 	},
 	led: function(data,idx) {
 		// 0th pin is anode, 1st pin is cathode
@@ -131,7 +174,7 @@ Simulator.component_functions = {
 		var x = ["D"+id,nodes[0],nodes[1],"LED"];
 		return x.join(" ")+"\n";
 	}
-}
+};
 
 Simulator.instrument_functions = {
 	voltage_source: function(data,idx) {
@@ -157,14 +200,14 @@ Simulator.instrument_functions = {
 
 		return x.join(" ")+"\n";
 	}
-}
+};
 
 Simulator.prototype.voltage = function(node1,node2) {
 	return this.out.voltages[node2] - this.out.voltages[node1];
-}
+};
 
 Simulator.prototype.generateNetList = function() {
-	var netlist = "circuit\n";
+	var netlist = "";
 	var supply_ground = null;
 
 	this.busmap = collapseBuses(this.spec.links);
@@ -174,7 +217,7 @@ Simulator.prototype.generateNetList = function() {
 		var line = Simulator.component_functions[cmp.type].call(this,cmp,i);
 		netlist += line;
 	}
-	for(var i in this.spec.instruments) {
+	for(i in this.spec.instruments) {
 		var inst = this.spec.instruments[i];
 		if(!supply_ground && inst.type == "voltage_source")
 			supply_ground = this.buses_to_nodes(inst.buses)[0];
@@ -188,7 +231,7 @@ Simulator.prototype.generateNetList = function() {
 	}
 	
 	return netlist;
-}
+};
 
 Simulator.prototype.buses_to_nodes = function(list) {
 	var nodes = [];
@@ -197,14 +240,16 @@ Simulator.prototype.buses_to_nodes = function(list) {
 		nodes.push(this.busmap[id] || id);
 	}
 	return nodes;
-}
+};
 
 Simulator.prototype.newComponentId = function() {
 	return this.component_id++;
-}
+};
 
 Simulator.prototype.run = function(donefunc) {
-	var netlist = this.generateNetList();
+	var netlist = "breadsim_circuit\n";
+	netlist += ".include spice/ua741.model\n";
+	netlist += this.generateNetList();
 	netlist += ".op\n";
 	netlist += ".end\n";
 	
@@ -250,14 +295,24 @@ Simulator.prototype.run = function(donefunc) {
 			console.error("ERRORRRR");
 		}
 	});
-}
+};
 
 app.post('/simulate',function(req,res) {
 	var data = req.body;
+
 	new Simulator(data).run(function(result) {
 		res.setHeader("Content-Type","application/json");
 		res.send(JSON.stringify(result));
 	});
+});
+
+app.use(ltiMiddleware({
+		consumer_key: consumer_key,
+		consumer_secret: consumer_secret
+}));
+
+app.post('/lti/launch',function(req,res) {
+	res.redirect("/");
 });
 
 var port = process.env.LISTEN_PORT || "3000";

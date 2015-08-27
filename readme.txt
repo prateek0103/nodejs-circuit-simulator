@@ -1,8 +1,9 @@
 To set up:
 - Install nodejs
-- in this directory, go:
+- In this directory, go:
   > npm update
 - Install ngspice
+- Install and set up redis (default config on ubuntu will work fine)
 
 To run:
 > node app.js
