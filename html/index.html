@@ -12,16 +12,16 @@
 		<script>
 			var component_icons;
 			var component_shop;
-			
+
 			function remember_cursor_position(ev) {
 				window.last_mousemove = ev;
 				return true;
 			}
-			
+
 			$(function() {
 				$(document.body).on("mousemove",remember_cursor_position);
 			});
-			
+
 			function dump(content) {
 				$(".dump-box .content").html("<pre>"+content+"</pre>");
 				$(".dump-box").show();
@@ -34,9 +34,13 @@
 					offset: [800,20],
 					voltage: 5
 				});
+
+				supply2 = new VoltageSource(desktop, {offset: [1000,20], voltage: 5});
 				meter = new Meter(desktop,{
 					offset: [800,300]
 				});
+
+				meter2 = new Meter(desktop,{offset: [800,500]});
 				component_shop = $(".component-shop");
 
 				component_icons = [
@@ -60,7 +64,7 @@
 						function() { return new Opamp(desktop); }
 					]
 				];
-				
+
 				component_shop.prepend(
 					component_icons.map(function(icon) {
 						var el = icon[0];
@@ -79,17 +83,17 @@
 						return box;
 					})
 				);
-				
+
 				$(".dump-box .closebtn").on("click",function() {
 					$(".dump-box").hide();
 					return false;
 				});
-				
+
 				$("#dumpbtn").on("click",function() {
 					dump(JSON.stringify(desktop.serialize()));
 					return false;
 				});
-				
+
 				var simulator;
 
 				$("#simulate_run").on("click",function() {
@@ -109,23 +113,23 @@
 					});
 					return false;
 				});
-				
+
 				$("#simulate_stop").on("click",function() {
 					desktop.reset();
 					if(!simulator) return false;
-					
+
 					simulator.cancel();
 					simulator = null;
 					return false;
 				});
-				
+
 				desktop.on("change",function() {
 					if(!simulator) return false;
 					simulator = null;
 					desktop.reset();
 				});
 			}
-			
+
 			$(breadsim_init);
 			$(init);
 		</script>
