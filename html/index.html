@@ -35,12 +35,16 @@
 					voltage: 5
 				});
 
-				supply2 = new VoltageSource(desktop, {offset: [1000,20], voltage: 5});
+				supply = new VoltageSource(desktop,{
+					offset: [900,20],
+					voltage: 5
+				});
 				meter = new Meter(desktop,{
 					offset: [800,300]
 				});
-
-				meter2 = new Meter(desktop,{offset: [800,500]});
+				meter2 = new Meter(desktop,{
+					offset: [800,400]
+				});
 				component_shop = $(".component-shop");
 
 				component_icons = [
